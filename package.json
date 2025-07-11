@@ -1,0 +1,16 @@
+{
+  "name": "backend_yt",
+  "version": "1.0.0",
+  "description": "backend in javascript for youtube clone",
+  "repository": {
+    "type": "git",
+    "url": "Backend in JavaScript"
+  },
+  "license": "ISC",
+  "author": "Soham Sakhare",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
