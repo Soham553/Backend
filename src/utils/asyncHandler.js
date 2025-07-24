@@ -13,9 +13,11 @@
 
 
 const asyncHandler = (requestHeader) => {
-    Promise
-    .resolve(requestHeader(req, res, next))
-    .catch((error) => next(error))
+    return (req, res, next) => {
+         Promise
+        .resolve(requestHeader(req, res, next))
+        .catch((error) => next(error))
+    }
 }
 
 
