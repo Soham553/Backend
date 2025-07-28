@@ -8,11 +8,6 @@ dotenv.config({
     path : './env'
 })
 
-
-
-
-
-
 connectdb()
 .then(() => {
     app.get('/', (req, res) => {
