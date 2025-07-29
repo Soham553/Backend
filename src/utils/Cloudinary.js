@@ -12,14 +12,14 @@ const uploadimage = async (LocalFilePath) => {
     try {
 
         if(!LocalFilePath) return null;
-        const res = cloudinary.uploader.upload(LocalFilePath,);
+        const res = await cloudinary.uploader.upload(LocalFilePath);
         console.log(res.url);
+        fs.unlinkSync(LocalFilePath);
         return res;
 
     } catch (error) {
-
-        fs.unlinkSync(LocalFilePath);
-
+        console.log(error)
+        
     }
 }
 
