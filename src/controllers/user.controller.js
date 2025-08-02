@@ -4,8 +4,7 @@ import { User } from "../models/user.model.js";
 // import { upload } from "../middlewares/multer.middleware.js";
 import { uploadimage} from "../utils/Cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js" 
-
-
+import jwt from "jsonwebtoken"
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -13,7 +12,6 @@ const generateAccessAndRefreshToken = async (userId) => {
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken(); 
-    console.log("access and refresh : ", accessToken, refreshToken);
 
     user.refreshToken = accessToken; 
 
@@ -25,12 +23,8 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
-
 const registerUser = asyncHandler(async (req, res) => {
-    
-    console.log("req_body : ",req.body);
     const {email, fullName, username, password} = req.body;
-    console.log(email);
 
     if([email, fullName, username, password].some((field) => 
         field?.trim() === ""
@@ -83,22 +77,16 @@ const registerUser = asyncHandler(async (req, res) => {
     )
 })
 
-
-
 const login = asyncHandler(async (req, res) => {
-    console.log(req.body);
     const {email, username, password} = req.body;
-    console.log(email);
-    console.log(username);
-    
-    const existUser = await User.findOne({
-        $or : [{email}, {username}]
-    })
 
-    if(!existUser || !username){
+    if(!(email || username)){
         throw new ApiErrors(400, "Please enter username or email");
     }
 
+    const existUser = await User.findOne({
+        $or : [{email}, {username}]
+    })
 
     if(!existUser){
         throw new ApiErrors(404, "User does not exist");
@@ -136,33 +124,78 @@ const login = asyncHandler(async (req, res) => {
 
 })
 
-
 const logout = asyncHandler(async (req, res) => {
-    await User.findById(
-        req.cookie._id,
-       { $set : {
-            refreshToken : undefined
-         }
-       },
-       {
-        new : true
-       }
-    )
+  const userId = req.cookies._id; 
 
-    return res
-        .status(200)
-        .cleareCookie("accessToken", option)
-        .cleareCookie("refreshToken", option)
-        .json(new ApiErrors(200, {}, "User Loged out successfuly"))
+  if (!userId) {
+    throw new ApiErrors(400, "User ID not found in cookies");
+  }
+
+  await User.findByIdAndUpdate(
+    userId,
+    { $set: { refreshToken: undefined } }, 
+    { new: true }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict"
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options) 
+    .clearCookie("refreshToken", options)
+    .json(new ApiErrors(200, {}, "User logged out successfully"));
+});
+
+const refreshAccessrefreshToken = asyncHandler(async (req, res) => {
+    const incomeingrefreshtoken = req.cookies.refreshToken || req.body.refreshToken
+
+    if(!incomeingrefreshtoken){
+        throw new ApiErrors(401, "Invalid refresh token")
+    }
+
+   try {
+     console.log("this is token : ", incomeingrefreshtoken);
+     const decode = jwt.verify(incomeingrefreshtoken, process.env.REFRESH_TOKEN_SECRET);
+ 
+     const findUser = await User.findById(decode._id);
+
+     if(!findUser){
+         throw new ApiErrors(401, "No such user is present")
+     }
+ 
+     const {newaccess, newrefresh} = generateAccessAndRefreshToken(findUser._id);
+ 
+     const option = {
+         httpOnly : true,
+         secure : true
+     }
+ 
+     return res
+     .status(200)
+     .cookie("accessToken", newaccess, option)
+     .cookie("refreshToken", newrefresh, option)
+     .json(
+         new ApiResponse(
+             200,
+             {
+                 accessToken : newaccess, refreshToken : newrefresh
+             },
+             "Refresh done"
+             
+         )
+     )
+   } catch (error) {
+        throw new ApiErrors(500, error)
+   }
 })
-
-
-
-
-
 
 export {
     registerUser,
     login,
-    logout
+    logout,
+    refreshAccessrefreshToken
 }

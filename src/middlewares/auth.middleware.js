@@ -14,12 +14,13 @@ export const verfiyjwt = asyncHandler ( async (req, res, next) => {
             }
         
             const user = await User.findById(verification?._id);
+            console.log("got it : ", user._id);
         
             if(!user){
                 throw new ApiErrors(400, "Not present user or wrong token");
             }
         
-            req.user = user;
+            req.cookies = user;
             next();
     } 
     catch (error) {
