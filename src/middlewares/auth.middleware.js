@@ -20,7 +20,7 @@ export const verfiyjwt = asyncHandler ( async (req, res, next) => {
                 throw new ApiErrors(400, "Not present user or wrong token");
             }
         
-            req.cookies = user;
+            req.user = user;
             next();
     } 
     catch (error) {

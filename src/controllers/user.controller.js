@@ -125,7 +125,7 @@ const login = asyncHandler(async (req, res) => {
 })
 
 const logout = asyncHandler(async (req, res) => {
-  const userId = req.cookies._id; 
+  const userId = req.user._id; 
 
   if (!userId) {
     throw new ApiErrors(400, "User ID not found in cookies");
@@ -193,9 +193,51 @@ const refreshAccessrefreshToken = asyncHandler(async (req, res) => {
    }
 })
 
+const changepass = asyncHandler( async (req, res) => {
+    const email = req.body.email;
+    const password = req.body.password;
+    const username = req.body.username;
+    const new_password = req.body.new_pass;
+
+    if(((email || username || password) && !(new_password) ) ){
+        throw new ApiErrors(400, "invalid credientials give full info")
+    }
+
+    if(password == new_password){
+        throw new ApiErrors(400, "Old and new password are same")
+    }
+
+    const user = await User.findOne({
+        $or : [{email}, {username}]
+    })
+
+    if(!user){
+        throw new ApiErrors(404, "Username or email is not valid");
+    }
+
+     const pass = await user.isPasswordCorrect(password);
+
+     if(!pass){
+        throw new ApiErrors(404, "Password is incorrect");
+    }
+
+    user.password = new_password;
+    await user.save({validateBeforeSave : false});
+
+    return res
+             .status(200)
+             .json(
+                new ApiResponse(
+                        200,
+                        "Password changed sucessfuly"
+                    )
+             )     
+})
+
 export {
     registerUser,
     login,
     logout,
-    refreshAccessrefreshToken
+    refreshAccessrefreshToken,
+    changepass
 }
